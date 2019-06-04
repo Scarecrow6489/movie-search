@@ -1,0 +1,15 @@
+.container{
+    text-align: center;
+    height: max-content;
+    margin-top: 50px;
+    margin-block-end: 25px;
+    color: brown
+}
+.detail{
+    width: 30%;
+    float: left;
+    border: 2px solid black;
+    margin-top: 25px;
+    margin-left: 15px;
+    background-color: beige;
+}

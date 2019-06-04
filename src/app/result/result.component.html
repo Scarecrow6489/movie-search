@@ -1,0 +1,16 @@
+<!-- <p>
+  result works!
+</p> -->
+<a href="search">back to search page</a>
+<div class="container">
+  <div class="row detail col-lg-4" *ngFor="let movie of result">
+    <h2>Movie : {{movie[0]['Movie Name']}}</h2>
+    <div>
+      <h4>Year : {{movie[0].Year}}</h4>
+      <h4>Language : {{movie[0].Language}}</h4>
+      <h4>IMDb Rating : {{movie[0]['IMDb Rating']}}</h4>
+      <h4>IMDb Votes : {{movie[0]['Number of IMDb Votes']}}</h4>
+      <h4>Awards : {{movie[0].Awards}}</h4>
+    </div>
+  </div>
+</div>

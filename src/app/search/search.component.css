@@ -1,0 +1,33 @@
+.container{
+    text-align: center;
+    margin-top: 30px;
+    border: 2px solid black;
+    width: 600px;
+    margin-left: auto;
+    margin-right: auto;
+    background-color: cadetblue;
+}
+
+input{
+    margin-left: 5px;
+    margin: 20px;
+    /* border: 3px solid teal; */
+    padding: 10px;
+    width: 300px;
+    /* background: rosybrown; */
+    font-weight: bold;
+}
+
+label{
+    font-size: 25px;
+    /* color: brown; */
+    font-weight: bold;
+}
+
+button{
+    padding: 10px;
+    width: 100px;
+    border: teal solid 2px;
+    border-radius: 4px;
+    margin-left: 10px;
+}

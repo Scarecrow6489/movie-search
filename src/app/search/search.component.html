@@ -1,0 +1,8 @@
+<div class="container">
+  <form>
+    <label>Name : </label>
+    <input type="text" placeholder="Enter Name of the Movie" [(ngModel)]=movieName
+      [ngModelOptions]="{standalone: true}">
+    <button (click)="getRelatedMovies()">Search</button>
+  </form>
+</div>
