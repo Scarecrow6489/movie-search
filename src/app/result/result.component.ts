@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { SearchComponent } from '../search/search.component';
 import { Router } from '@angular/router';
+import { QueryService } from '../service/query.service';
 @Component({
   selector: 'app-result',
   templateUrl: './result.component.html',
@@ -9,30 +9,35 @@ import { Router } from '@angular/router';
 })
 export class ResultComponent implements OnInit {
 
-  constructor(private _http: HttpClient, private _search: SearchComponent,
+  constructor(
+    private _http: HttpClient,
+    private _query: QueryService,
     private _router: Router) { }
 
   result: any[];
-
+  query: string;
   ngOnInit() {
-    var query = 'sketch'; //this._search.movieName;
-    if(!query){
+    
+    this.query = this._query.getMovieName();
+    if(!this.query){
       this._router.navigate(['search']);
     }
-    console.log(query);
+    console.log(this.query);
     
     var possibilities = []
     this._http.get<any>('../../assets/movies.json').subscribe(res => {
       res.forEach(movie => {
         var title =  movie['Movie Name'].toLowerCase()
-        var distance = this.getLevenshteinDistance(query.toLowerCase(), title);
-        if(((distance / query.length) < .5) || distance == title.length-query.length){
-          possibilities.push([movie, distance/query.length]);
+        var distance = this.ld(this.query.toLowerCase(), title);
+        if(((distance / this.query.length) < .4) || distance == title.length-this.query.length){
+          possibilities.push([movie, distance/this.query.length]);
         }
       });
+      console.log(possibilities);
+      
       this.result = possibilities.sort((a,b) => {
         return Number(a[1]) - Number(b[1]);
-      }).slice(1, 10);
+      }).slice(0, 10);
       console.log(this.result);
     })
   }
@@ -67,5 +72,37 @@ export class ResultComponent implements OnInit {
     }
   
     return matrix[b.length][a.length];
+  }
+  ld(a, b) {
+    // Create empty edit distance matrix for all possible modifications of
+    // substrings of a to substrings of b.
+    const distanceMatrix = Array(b.length + 1).fill(null).map(() => Array(a.length + 1).fill(null));
+  
+    // Fill the first row of the matrix.
+    // If this is first row then we're transforming empty string to a.
+    // In this case the number of transformations equals to size of a substring.
+    for (let i = 0; i <= a.length; i += 1) {
+      distanceMatrix[0][i] = i;
+    }
+  
+    // Fill the first column of the matrix.
+    // If this is first column then we're transforming empty string to b.
+    // In this case the number of transformations equals to size of b substring.
+    for (let j = 0; j <= b.length; j += 1) {
+      distanceMatrix[j][0] = j;
+    }
+  
+    for (let j = 1; j <= b.length; j += 1) {
+      for (let i = 1; i <= a.length; i += 1) {
+        const indicator = a[i - 1] === b[j - 1] ? 0 : 1;
+        distanceMatrix[j][i] = Math.min(
+          distanceMatrix[j][i - 1] + 1, // deletion
+          distanceMatrix[j - 1][i] + 1, // insertion
+          distanceMatrix[j - 1][i - 1] + indicator, // substitution
+        );
+      }
+    }
+  
+    return distanceMatrix[b.length][a.length];
   }
 }

@@ -1,7 +1,10 @@
 <!-- <p>
   result works!
 </p> -->
-<a href="search">back to search page</a>
+<div class="container">
+  <h3>Search Query : {{query}}</h3>
+  <a href="search">back to search page</a>
+</div>
 <div class="container">
   <div class="row detail col-lg-4" *ngFor="let movie of result">
     <h2>Movie : {{movie[0]['Movie Name']}}</h2>

@@ -1,5 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
+import { QueryService } from '../service/query.service';
 
 @Component({
   selector: 'app-search',
@@ -8,7 +9,7 @@ import { Router } from '@angular/router';
 })
 export class SearchComponent implements OnInit {
 
-  constructor(private _router: Router){}
+  constructor(private _router: Router, private _query: QueryService){}
 
   movieName: string;
 
@@ -17,7 +18,7 @@ export class SearchComponent implements OnInit {
 
   getRelatedMovies(){
     console.log(this.movieName);
-    
+    this._query.setMovieName(this.movieName);
     if(this.movieName){
       this._router.navigate(['result']);
     }
