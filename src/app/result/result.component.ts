@@ -16,6 +16,12 @@ export class ResultComponent implements OnInit {
 
   result: any[];
   query: string;
+  jaro_winkler = {
+    distance: 0,
+    adjustments: 0,
+    weight: 0
+  };
+
   ngOnInit() {
     
     this.query = this._query.getMovieName();
@@ -28,16 +34,15 @@ export class ResultComponent implements OnInit {
     this._http.get<any>('../../assets/movies.json').subscribe(res => {
       res.forEach(movie => {
         var title =  movie['Movie Name'].toLowerCase()
-        var distance = this.ld(this.query.toLowerCase(), title);
-        if(((distance / this.query.length) < .4) || distance == title.length-this.query.length){
-          possibilities.push([movie, distance/this.query.length]);
+        var distance = this.jaro_winklerdistance(this.query.toLowerCase(), title);
+        if((distance > .7)){
+          possibilities.push([movie, distance]);
         }
       });
       console.log(possibilities);
-      
       this.result = possibilities.sort((a,b) => {
         return Number(a[1]) - Number(b[1]);
-      }).slice(0, 10);
+      }).reverse().slice(0, 10);
       console.log(this.result);
     })
   }
@@ -73,36 +78,93 @@ export class ResultComponent implements OnInit {
   
     return matrix[b.length][a.length];
   }
-  ld(a, b) {
-    // Create empty edit distance matrix for all possible modifications of
-    // substrings of a to substrings of b.
-    const distanceMatrix = Array(b.length + 1).fill(null).map(() => Array(a.length + 1).fill(null));
+  jaro_winklerdistance(a, b) {
+
+    if (!a || !b) { return 0.0; }
   
-    // Fill the first row of the matrix.
-    // If this is first row then we're transforming empty string to a.
-    // In this case the number of transformations equals to size of a substring.
-    for (let i = 0; i <= a.length; i += 1) {
-      distanceMatrix[0][i] = i;
-    }
+    a = a.trim().toUpperCase();
+    b = b.trim().toUpperCase();
+    var a_len = a.length;
+    var b_len = b.length;
+    var a_flag = []; var b_flag = [];
+    var search_range = Math.floor(Math.max(a_len, b_len) / 2) - 1;
+    var minv = Math.min(a_len, b_len);
   
-    // Fill the first column of the matrix.
-    // If this is first column then we're transforming empty string to b.
-    // In this case the number of transformations equals to size of b substring.
-    for (let j = 0; j <= b.length; j += 1) {
-      distanceMatrix[j][0] = j;
-    }
-  
-    for (let j = 1; j <= b.length; j += 1) {
-      for (let i = 1; i <= a.length; i += 1) {
-        const indicator = a[i - 1] === b[j - 1] ? 0 : 1;
-        distanceMatrix[j][i] = Math.min(
-          distanceMatrix[j][i - 1] + 1, // deletion
-          distanceMatrix[j - 1][i] + 1, // insertion
-          distanceMatrix[j - 1][i - 1] + indicator, // substitution
-        );
+    // Looking only within the search range, count and flag the matched pairs. 
+    var Num_com = 0;
+    var yl1 = b_len - 1;
+    for (var i = 0; i < a_len; i++) {
+      var lowlim = (i >= search_range) ? i - search_range : 0;
+      var hilim  = ((i + search_range) <= yl1) ? (i + search_range) : yl1;
+      for (var j = lowlim; j <= hilim; j++) {
+        if (b_flag[j] !== 1 && a[j] === b[i]) {
+          a_flag[j] = 1;
+          b_flag[i] = 1;
+          Num_com++;
+          break;
+        }
       }
     }
   
-    return distanceMatrix[b.length][a.length];
-  }
+    // Return if no characters in common
+    if (Num_com === 0) { return 0.0; }
+  
+    // Count the number of transpositions
+    var k = 0; var N_trans = 0;
+    for (var i = 0; i < a_len; i++) {
+      if (a_flag[i] === 1) {
+        var j: number;
+        for (j = k; j < b_len; j++) {
+          if (b_flag[j] === 1) {
+            k = j + 1;
+            break;
+          }
+        }
+        if (a[i] !== b[j]) { N_trans++; }
+      }
+    }
+    N_trans = Math.floor(N_trans / 2);
+  
+    // Adjust for similarities in nonmatched characters
+    var N_simi = 0; var adjwt = this.jaro_winkler.adjustments;
+    if (minv > Num_com) {
+      for (var i = 0; i < a_len; i++) {
+        if (!a_flag[i]) {
+          for (var j = 0; j < b_len; j++) {
+            if (!b_flag[j]) {
+              if (adjwt[a[i]] === b[j]) {
+                N_simi += 3;
+                b_flag[j] = 2;
+                break;
+              }
+            }
+          }
+        }
+      }
+    }
+  
+    var Num_sim = (N_simi / 10.0) + Num_com;
+  
+    // Main weight computation
+    var weight = Num_sim / a_len + Num_sim / b_len + (Num_com - N_trans) / Num_com;
+    weight = weight / 3;
+  
+    // Continue to boost the weight if the strings are similar
+    if (weight > 0.7) {
+      // Adjust for having up to the first 4 characters in common
+      var j = (minv >= 4) ? 4 : minv;
+      var i: number;
+      for (i = 0; (i < j) && a[i] === b[i]; i++) { }
+      if (i) { weight += i * 0.1 * (1.0 - weight) };
+  
+      // Adjust for long strings.
+      // After agreeing beginning chars, at least two more must agree
+      // and the agreeing characters must be more than half of the
+      // remaining characters.
+      if (minv > 4 && Num_com > i + 1 && 2 * Num_com >= minv + i) {
+        weight += (1 - weight) * ((Num_com - i - 1) / (a_len * b_len - i*2 + 2));
+      }
+    }
+    return weight
+  };
 }
