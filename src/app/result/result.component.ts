@@ -34,7 +34,7 @@ export class ResultComponent implements OnInit {
     this._http.get<any>('../../assets/movies.json').subscribe(res => {
       res.forEach(movie => {
         var title =  movie['Movie Name'].toLowerCase()
-        var distance = this.jaro_winklerdistance(this.query.toLowerCase(), title);
+        var distance = this.jaro_winklerdistance(this.query.toLowerCase().replace(/\s/g, ''), title.replace(/\s/g, ''));
         if((distance > .7)){
           possibilities.push([movie, distance]);
         }
